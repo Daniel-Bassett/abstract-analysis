@@ -34,6 +34,7 @@ keywords = st.text_input('Enter keywords')
 keywords = keywords.split(' ')
 
 nih_first_100 = load_data('data/nih_first_100.parquet')
+nih_first_100 = nih_first_100.drop_duplicates(subset='abstract_text')
 nih_first_100 = nih_first_100[['org_name', 'summary', 'keywords', 'abstract_text']]
 
 temp_df = nih_first_100.copy()
