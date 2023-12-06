@@ -83,12 +83,8 @@ with bottom_menu[0]:
 pages = split_frame(temp_df, batch_size)
 pagination.dataframe(data=pages[current_page - 1], use_container_width=True)
 
-# st.header("test html import")
 
-# HtmlFile = open("data/country.html", 'r', encoding='utf-8')
-# source_code = HtmlFile.read() 
-# print(source_code)
-# components.html(source_code, height=1000, width=1300)
+# Keyword Rankings
 
 st.divider()
 
@@ -96,4 +92,4 @@ st.markdown('## Keyword Ranking', unsafe_allow_html=True)
 
 keywords = [word for words in nih_keywords_summary.keywords for word in words]
 keywords = pd.Series(keywords)
-st.write(keywords.value_counts() / len(nih_keywords_summary) * 100)
+st.write((keywords.value_counts() / len(nih_keywords_summary) * 100).round(2).rename('percentage of abstracts'))
