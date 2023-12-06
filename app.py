@@ -37,19 +37,46 @@ def split_frame(input_df, rows):
 
 st.markdown('## Abstract Search', unsafe_allow_html=True)
 
-keywords = st.text_input('Enter keywords')
-keywords = keywords.split(' ')
 
 nih_keywords_summary = load_data('data/nih_keywords_summary.parquet')
 nih_keywords_summary = nih_keywords_summary.drop_duplicates(subset='abstract_text')
-nih_keywords_summary = nih_keywords_summary[['org_name', 'summary', 'keywords', 'abstract_text']]
 nih_keywords_summary['abstract_text'] = nih_keywords_summary['abstract_text'].str.replace('’', "'")
+nih_keywords_summary = nih_keywords_summary.rename(columns={'PI_count': 'Principal Investigators Count', 'abstract_text': 'Abstract',
+                                                            'appl_id': 'Application ID', 'fiscal_year': 'Fiscal Year', 'keywords': 'Keywords', 'n_employees': 'Employee Count',
+                                                            'opportunity_number': 'Opportunity Number', 'org_name': 'Company', 'phr_text': 'Public Health Relevance',
+                                                            'project_detail_url': 'Project URL', 'project_end_date': 'End Date', 'project_start_date': 'Start Date',
+                                                            'project_title': 'Project Title', 'publications_count': 'Publications Count', 
+                                                            'spending_categories_desc': 'Spending Categories', 'terms': 'Terms', 'summary': 'Summary'})
+
+
+keywords_column = st.columns((6, 6))
+with keywords_column[0]:
+    keywords = st.text_input('Enter keywords')
+    keywords = keywords.split(' ')
+
+columns_column = st.columns((6,6))
+with columns_column[0]:
+    with st.expander('Add/Remove Columns'):
+        columns = st.multiselect('Select Columns', options=nih_keywords_summary.columns.sort_values(), default=['Company', 'Summary', 'Keywords'])
+
+# with columns_column[1]:
+#     with st.expander('Column Explanations'):
+#         st.write("""
+#                     1. Test
+#                     2. Test
+#                 """)
+
+# nih_keywords_summary = nih_keywords_summary[['org_name', 'summary', 'keywords', 'abstract_text']]
+# nih_keywords_summary = nih_keywords_summary[['org_name', 'summary', 'keywords', 'abstract_text']]
+
+
+
 
 temp_df = nih_keywords_summary.copy()
 for keyword in keywords:
-    keyword_filter = temp_df['abstract_text'].str.contains(keyword, case=False)
+    keyword_filter = temp_df['Abstract'].str.contains(keyword, case=False)
     temp_df = temp_df[keyword_filter]
-temp_df = temp_df[['org_name', 'summary', 'keywords']].reset_index(drop=True)
+temp_df = temp_df[columns].reset_index(drop=True)
 
 # top_menu = st.columns(3)
 
@@ -59,11 +86,6 @@ temp_df = temp_df[['org_name', 'summary', 'keywords']].reset_index(drop=True)
 #     sort_direction = st.radio(
 #         "Direction", options=["⬆️", "⬇️"], horizontal=True
 #     )
-
-# st.data_editor(
-#     temp_df,
-#     hide_index=True
-# )
 
 pagination = st.container()
 
@@ -81,7 +103,8 @@ with bottom_menu[0]:
     st.markdown(f"Page **{current_page}** of **{total_pages}** ")
 
 pages = split_frame(temp_df, batch_size)
-pagination.dataframe(data=pages[current_page - 1], use_container_width=True)
+pagination.data_editor(data=pages[current_page - 1], use_container_width=True, hide_index=True)
+
 
 
 # Keyword Rankings
@@ -90,6 +113,6 @@ st.divider()
 
 st.markdown('## Keyword Ranking', unsafe_allow_html=True)
 
-keywords = [word for words in nih_keywords_summary.keywords for word in words]
+keywords = [word for words in nih_keywords_summary.Keywords for word in words]
 keywords = pd.Series(keywords)
 st.write((keywords.value_counts() / len(nih_keywords_summary) * 100).round(2).rename('percentage of abstracts'))
