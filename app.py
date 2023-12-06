@@ -112,7 +112,7 @@ pagination.data_editor(data=pages[current_page - 1], use_container_width=True, h
 if 'Keywords' in temp_df.columns:
     st.divider()
 
-    st.markdown('## Keyword Ranking', unsafe_allow_html=True)
+    st.markdown('## Word Frequency', unsafe_allow_html=True)
 
     keywords = [word for words in temp_df.Keywords for word in words]
     keywords = pd.Series(keywords)
