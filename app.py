@@ -109,10 +109,11 @@ pagination.data_editor(data=pages[current_page - 1], use_container_width=True, h
 
 # Keyword Rankings
 
-st.divider()
+if 'Keywords' in temp_df.columns:
+    st.divider()
 
-st.markdown('## Keyword Ranking', unsafe_allow_html=True)
+    st.markdown('## Keyword Ranking', unsafe_allow_html=True)
 
-keywords = [word for words in nih_keywords_summary.Keywords for word in words]
-keywords = pd.Series(keywords)
-st.write((keywords.value_counts() / len(nih_keywords_summary) * 100).round(2).rename('percentage of abstracts'))
+    keywords = [word for words in temp_df.Keywords for word in words]
+    keywords = pd.Series(keywords)
+    st.write((keywords.value_counts() / len(temp_df) * 100).round(1).rename('percentage of abstracts'))
