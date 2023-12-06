@@ -10,6 +10,8 @@ import plotly_express as px
 
 from openai import OpenAI
 
+st.set_page_config(layout='wide')
+
 try:
     with open('../../openai_key.txt', 'r') as file:
         API_KEY = file.read().strip()
@@ -87,33 +89,35 @@ temp_df = temp_df[columns].reset_index(drop=True)
 #         "Direction", options=["⬆️", "⬇️"], horizontal=True
 #     )
 
-pagination = st.container()
+main_columns = st.columns((6, 6))
 
-bottom_menu = st.columns((3, 1, 1))
-with bottom_menu[2]:
-    batch_size = st.selectbox("Page Size", options=[25, 50, 100])
-with bottom_menu[1]:
-    total_pages = (
-        int(len(temp_df) / batch_size) if int(len(temp_df) / batch_size) > 0 else 1
-    )
-    current_page = st.number_input(
-        "Page", min_value=1, max_value=total_pages, step=1
-    )
-with bottom_menu[0]:
-    st.markdown(f"Page **{current_page}** of **{total_pages}** ")
+# DATAFRAME COLUMN
+with main_columns[0]:
+    pagination = st.container()
 
-pages = split_frame(temp_df, batch_size)
-pagination.data_editor(data=pages[current_page - 1], use_container_width=True, hide_index=True)
+    bottom_menu = st.columns((3, 5, 4))
+    with bottom_menu[2]:
+        batch_size = st.selectbox("Page Size", options=[25, 50, 100])
+    with bottom_menu[1]:
+        total_pages = (
+            int(len(temp_df) / batch_size) if int(len(temp_df) / batch_size) > 0 else 1
+        )
+        current_page = st.number_input(
+            "Page", min_value=1, max_value=total_pages, step=1
+        )
+    with bottom_menu[0]:
+        st.markdown(f"Page **{current_page}** of **{total_pages}** ")
+
+    pages = split_frame(temp_df, batch_size)
+    pagination.data_editor(data=pages[current_page - 1], use_container_width=True, hide_index=True)
 
 
-
+with main_columns[1]:
 # Keyword Rankings
+    if 'Keywords' in temp_df.columns:
 
-if 'Keywords' in temp_df.columns:
-    st.divider()
+        # st.markdown('## Word Frequency', unsafe_allow_html=True)
 
-    st.markdown('## Word Frequency', unsafe_allow_html=True)
-
-    keywords = [word for words in temp_df.Keywords for word in words]
-    keywords = pd.Series(keywords)
-    st.write((keywords.value_counts() / len(temp_df) * 100).round(1).rename('percentage of abstracts'))
+        keywords = [word for words in temp_df.Keywords for word in words]
+        keywords = pd.Series(keywords)
+        st.write((keywords.value_counts() / len(temp_df) * 100).round(1).rename('percentage of abstracts'))
