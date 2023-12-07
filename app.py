@@ -118,11 +118,12 @@ with main_columns[1]:
         st.write((keywords.value_counts() / len(temp_df) * 100).round(1).rename('percentage of abstracts'))
 
 
-st.markdown('#### Change Log', unsafe_allow_html=True)
+st.markdown('#### Changelog', unsafe_allow_html=True)
 st.markdown("""
         ##### 12/7/2023:
             - Added 2018-2022 data (~10,000 rows)
             - More columns added (award amount, direct/indirect cost, agency)
+            - Cleaned up the keywords column
 """, unsafe_allow_html=True)
 
 
