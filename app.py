@@ -53,6 +53,7 @@ nih_keywords_summary = load_data('data/nih_keywords_summary.parquet')
 nih_keywords_summary = nih_keywords_summary.drop_duplicates(subset='abstract_text')
 nih_keywords_summary = nih_keywords_summary.drop(columns=['agency_code', 'agency_ic_admin', 'organization', 'agency_ic_fundings', 'arra_funded',
                                                           'mechanism_code_dc', ])
+nih_keywords_summary['City'] = nih_keywords_summary['City'].str.upper()
 nih_keywords_summary['abstract_text'] = nih_keywords_summary['abstract_text'].str.replace('’', "'")
 nih_keywords_summary['keywords'] = nih_keywords_summary['keywords'].apply(lambda lst: [word.replace('’', "'") for word in lst])
 nih_keywords_summary['keywords'] = nih_keywords_summary['keywords'].apply(lambda lst: [word.lower() for word in lst])
@@ -67,7 +68,7 @@ nih_keywords_summary = nih_keywords_summary.rename(columns={'agency': 'Agency', 
 
 # Define Tabs
 # eda_tab, agency_tab, keyword_tab, changelog_tab = st.tabs(['EDA', 'Agency', 'Keyword', 'Changelog'])
-keyword_tab, changelog_tab = st.tabs(['Keyword', 'Changelog'])
+
 
 
 
@@ -92,25 +93,32 @@ keyword_tab, changelog_tab = st.tabs(['Keyword', 'Changelog'])
 # with agency_tab:
 #     st.write(nih_keywords_summary)  
 
+st.markdown('## InsightGrant', unsafe_allow_html=True)
+
+keyword_tab, changelog_tab = st.tabs(['Keyword', 'Changelog'])
 
 # KEYWORD SEARCH
 with keyword_tab:
-    st.markdown('## InsightGrant', unsafe_allow_html=True)
 
-    # WIDGETS
+    # FILTER WIDGETS
     keywords_column = st.columns((6, 6))
     with keywords_column[0]:
         keywords = st.text_input('Enter keywords')
         keywords = keywords.split(' ')
 
-    columns_column = st.columns((6,6))
-    with columns_column[0]:
+    filter_columns = st.columns((3,3,3,3))
+    with filter_columns[0]:
         with st.expander('Add/Remove Columns'):
             columns = st.multiselect('Select Columns', options=nih_keywords_summary.columns.sort_values(), default=['Company', 'Summary', 'Keywords'])
-    with columns_column[1]:
+    with filter_columns[1]:
         with st.expander('Year(s)'):
-            year_options = list(nih_keywords_summary.Fiscal_Year.unique())
+            year_options = sorted(list(nih_keywords_summary.Fiscal_Year.unique()))
             years = st.multiselect('Select Year(s)', year_options, default=2023)
+    with filter_columns[2]:
+        with st.expander('City'):
+            city_options = list(nih_keywords_summary.City.unique())
+            # city_options.append('(All Cities)')
+            cities = st.multiselect('Select City', sorted(city_options))
 
     # MAKE NIH COPY
     temp_df = nih_keywords_summary.copy()
@@ -124,6 +132,13 @@ with keyword_tab:
     for keyword in keywords:
         keyword_filter = temp_df['Abstract'].str.contains(keyword, case=False)
         temp_df = temp_df[keyword_filter]
+
+    # FILTER CITIES
+    if cities:
+        # city_filter = temp_df['City'] == cities
+        with filter_columns[2]:
+            city_filter = temp_df['City'].isin(cities)
+            temp_df = temp_df[city_filter]
 
     # FILTER COLUMNS
     temp_df = temp_df[columns]
@@ -150,17 +165,42 @@ with keyword_tab:
         # pages = split_frame(temp_df, batch_size)
         # pagination.data_editor(data=pages[current_page - 1], use_container_width=True, hide_index=True, column_config={"Select": st.column_config.CheckboxColumn(required=True)})
         pagination.data_editor(data=temp_df, use_container_width=True, hide_index=True)
-        st.write(f'Companies: {len(temp_df.Company.unique())}')
 
+        st.divider()
+        
         # AGGREGATIONS AT BOTTOM OF PAGE
-        # agg_df = (nih_keywords_summary.loc[temp_df.index]
-        #           .groupby(['Agency']).size()
-        #           )
-        # st.write(agg_df)
-        # st.write(nih_keywords_summary.loc[temp_df.index][['Company', 'Fiscal_Year']].drop_duplicates().Fiscal_Year.value_counts().rename('Companies').sort_index(ascending=False))
+        if 'Company' in temp_df.columns:
+            agg_columns = st.columns((3,3,5,3))
+            agg_df = nih_keywords_summary.loc[temp_df.index]
+            agency_counts = (agg_df
+                            .drop_duplicates(subset='Company')
+                            .groupby(['Agency'])
+                            .size()
+                            .sort_values(ascending=False)
+                            .rename('Companies')
+                            )
+            location_counts = (agg_df
+                            .drop_duplicates(subset='Company')
+                            .groupby(['State', 'City'])
+                            .size()
+                            .sort_values(ascending=False)
+                            .rename('Companies')
+                            )
+            
+            with agg_columns[0]:
+                st.write(f'Companies: {len(temp_df.Company.unique())}')
+                st.write(f'Awards: {len(agg_df["Application ID"].unique())}')
+                st.write(f'Average Award: {"${:,.0f}".format(agg_df["Award Amount"].mean())}')
+                st.write(f'Median Award: {"${:,.0f}".format(agg_df["Award Amount"].median())}')
+            with agg_columns[2]:
+                st.write('City Counts')
+                st.write(location_counts)
+            with agg_columns[1]:
+                st.write('Agency Counts')
+                st.write(agency_counts)
 
-    with main_columns[1]:
     # Keyword Rankings
+    with main_columns[1]:
         if 'Keywords' in temp_df.columns:
 
             # st.markdown('## Word Frequency', unsafe_allow_html=True)
@@ -182,7 +222,8 @@ with changelog_tab:
             ##### 12/8/2023:
                 - Added filter for Years (default is 2023)
                 - Added Count for Companies that fit keyword criteria
-                - Added Tabs
+                - Added Aggregations
+                - Added Tabs 
                 - Removed pagination from data frame (for now)
     """, unsafe_allow_html=True)
 
