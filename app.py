@@ -375,6 +375,10 @@ with changelog_tab:
                 - Added Tabs 
                 - Removed pagination from data frame (for now)
     """, unsafe_allow_html=True)
+    st.markdown("""
+            ##### 12/12/2023:
+                - Added Webscraping Feature
+    """, unsafe_allow_html=True)
 
 
 # st.write('GRID OPTION BUILDER')
