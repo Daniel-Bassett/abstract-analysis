@@ -4,3 +4,6 @@ plotly_express
 streamlit_option_menu
 openai
 xlsxwriter
+bs4
+selenium
+webdriver_manager
