@@ -5,5 +5,5 @@ streamlit_option_menu
 openai
 xlsxwriter
 bs4
-selenium==4.14
+selenium
 webdriver_manager
