@@ -112,7 +112,6 @@ def top_10(df):
   return df.head(10)
 
 
-@st.cache_data
 def get_cosine_similarity(startups, grants):
     for grant_number in grants.grant_number:
         stacked_embeddings = np.stack(startups['embeddings'])
