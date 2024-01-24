@@ -97,11 +97,6 @@ def get_summary(page_text):
     return json.loads(completion.choices[0].message.content)
 
 
-# @st.cache_data(show_spinner=False)
-# def split_frame(input_df, rows):
-#     df = [input_df.loc[i : i + rows - 1, :] for i in range(0, len(input_df), rows)]
-#     return df
-
 @st.cache_data(show_spinner=False)
 def split_frame(input_df, rows):
     df = [input_df.iloc[i : i + rows] for i in range(0, len(input_df), rows)]
@@ -170,7 +165,6 @@ with keyword_tab:
     with filter_columns[2]:
         with st.expander('City'):
             city_options = list(nih_keywords_summary.City.unique())
-            # city_options.append('(All Cities)')
             cities = st.multiselect('Select City', sorted(city_options))
 
     # MAKE NIH COPY
@@ -188,7 +182,6 @@ with keyword_tab:
 
     # FILTER CITIES
     if cities:
-        # city_filter = temp_df['City'] == cities
         with filter_columns[2]:
             city_filter = temp_df['City'].isin(cities)
             temp_df = temp_df[city_filter]
@@ -201,22 +194,6 @@ with keyword_tab:
     # DATAFRAME COLUMN
     with main_columns[0]:
         pagination = st.container()
-
-        # bottom_menu = st.columns((3, 5, 4))
-        # with bottom_menu[2]:
-        #     batch_size = st.selectbox("Page Size", options=[25, 50, 100])
-        # with bottom_menu[1]:
-        #     total_pages = (
-        #         int(len(temp_df) / batch_size) if int(len(temp_df) / batch_size) > 0 else 1
-        #     )
-        #     current_page = st.number_input(
-        #         "Page", min_value=1, max_value=total_pages, step=1
-        #     )
-        # with bottom_menu[0]:
-        #     st.markdown(f"Page **{current_page}** of **{total_pages}** ")
-
-        # pages = split_frame(temp_df, batch_size)
-        # pagination.data_editor(data=pages[current_page - 1], use_container_width=True, hide_index=True, column_config={"Select": st.column_config.CheckboxColumn(required=True)})
         pagination.data_editor(data=temp_df, use_container_width=True, hide_index=True)
 
         st.divider()
@@ -275,8 +252,8 @@ with startups:
                     .sort_values(by=grant_number, ascending=False)[['url', 'summary']])
         url = st.selectbox('select startup', options=temp_df['url'])
         if url:
-            st.write(url)
             st.write(temp_df.query('url == @url')['summary'].values[0])
+            st.write(url)
 
 
 # WEBSCRAPE
@@ -390,13 +367,6 @@ with changelog_tab:
     """, unsafe_allow_html=True)
 
 
-# Creat Columns of Grant Titles and Get Dot Products
-# for grant_number in grants.grant_number:
-#     stacked_embeddings = np.stack(startups_copy['embeddings'])
-#     grant_embeddings = grants.query('grant_number == @grant_number')['embeddings'].values[0]
-#     startups_copy[grant_number] = np.dot(stacked_embeddings, grant_embeddings)
-
-# cosine_similarity = startups_copy[['url', 'summary', 'ARPA-H-01',	'ARPA-H-02', 'ARPA-H-03', 'ARPA-H-04', 'ARPA-H-05','ARPA-H-06']]
     
 
 
