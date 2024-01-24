@@ -1,7 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-from streamlit_option_menu import option_menu
-# from st_aggrid import AgGrid, GridOptionsBuilder
 
 import time
 import io
@@ -41,6 +39,11 @@ try:
     client = OpenAI(api_key=API_KEY)
 except:
     client = OpenAI(api_key=st.secrets["api_key"])
+
+
+@st.cache_data
+def save_data_cache(data):
+    return data
 
 
 @st.cache_data
@@ -109,7 +112,24 @@ def top_10(df):
   return df.head(10)
 
 
+@st.cache_data
+def get_cosine_similarity(startups, grants):
+    for grant_number in grants.grant_number:
+        stacked_embeddings = np.stack(startups['embeddings'])
+        grant_embeddings = grants.query('grant_number == @grant_number')['embeddings'].values[0]
+        startups[grant_number] = np.dot(stacked_embeddings, grant_embeddings)
+
+    cosine_similarity = startups[['url', 'summary', 'ARPA-H-01',	'ARPA-H-02', 'ARPA-H-03', 'ARPA-H-04', 'ARPA-H-05','ARPA-H-06']]
+    return cosine_similarity
+
+
+# LOAD DATA
 nih_keywords_summary = load_data('data/nih_keywords_summary.parquet')
+arpa_h = load_data('data/arpa_h.parquet')
+startups_data = load_data('data/startups_processed.parquet')
+cosine_similarity = get_cosine_similarity(startups_data, arpa_h)
+
+# PROCESS NIH KEY WORDS AND SUMMARY
 nih_keywords_summary = nih_keywords_summary.drop_duplicates(subset='abstract_text')
 nih_keywords_summary = nih_keywords_summary.drop(columns=['agency_code', 'agency_ic_admin', 'organization', 'agency_ic_fundings', 'arra_funded',
                                                           'mechanism_code_dc', ])
@@ -126,36 +146,10 @@ nih_keywords_summary = nih_keywords_summary.rename(columns={'agency': 'Agency', 
                                                             'cong_dist': 'Congressional Dist.', 'direct_cost_amt': 'Direct Costs', 'indirect_cost_amt': 'Indirect Costs', 'city': 'City'
                                                             })
 
-# Define Tabs
-# eda_tab, agency_tab, keyword_tab, changelog_tab = st.tabs(['EDA', 'Agency', 'Keyword', 'Changelog'])
-
-
-
-
-# # EXPLORATORY DATA ANALYSIS
-# with eda_tab:
-#     st.write('Agency Tab')
-    
-#     agency_value_counts = (nih_keywords_summary
-#                            .query('Fiscal_Year != 2024')
-#                            .groupby(['Fiscal_Year', 'Agency'], as_index=False)
-#                            .size()
-#                            .sort_values(by=['Fiscal_Year', 'size'], ascending=[True, False])
-#                            .groupby('Fiscal_Year')
-#                            .apply(top_10)
-#                            .reset_index(drop=True)
-#                            )
-#     fig = px.bar(agency_value_counts.sort_values(by=['Fiscal_Year', 'size']), x="size", y="Agency", facet_col="Fiscal_Year", orientation='h')
-#     st.plotly_chart(fig, use_container_width=True)
-
-
-# # AGENCY 
-# with agency_tab:
-#     st.write(nih_keywords_summary)  
 
 st.markdown('## InsightGrant', unsafe_allow_html=True)
 
-keyword_tab, webscrape, changelog_tab = st.tabs(['Keyword', 'WebScrape', 'Changelog'])
+keyword_tab, startups, webscrape, changelog_tab = st.tabs(['Keyword', 'Startups', 'Webscrape' ,'Changelog'])
 
 # KEYWORD SEARCH
 with keyword_tab:
@@ -269,6 +263,23 @@ with keyword_tab:
             keywords = pd.Series(keywords)
             st.write((keywords.value_counts() / len(temp_df) * 100).round(1).rename('percentage of abstracts'))
 
+
+# Startups
+with startups:
+    columns = st.columns([4, 6, 6])
+    with columns[0]:
+        grant_number = st.selectbox('select grant', options=arpa_h.grant_number.unique())
+        arpa_filtered = arpa_h.query('grant_number == @grant_number')
+        st.write(arpa_filtered['grant_description'].values[0])
+    with columns[1]:
+        temp_df = (cosine_similarity[cosine_similarity[grant_number] > 0.80]
+                    .sort_values(by=grant_number, ascending=False)[['url', 'summary']])
+        url = st.selectbox('select startup', options=temp_df['url'])
+        if url:
+            st.write(url)
+            st.write(temp_df.query('url == @url')['summary'].values[0])
+
+
 # WEBSCRAPE
 with webscrape:
     # get user url input
@@ -332,21 +343,10 @@ with webscrape:
         # Close the browser
         driver.quit()
 
-        # Display the scraped text
-        # st.write(internal_hrefs)
-        # st.write(page_text)
 
         st.session_state['message'].text(f"Extracting Keywords/Summary...")
         data = get_summary(page_text)
-        # st.write(data)
 
-        # st.markdown('### Summary:', unsafe_allow_html=True)
-        # st.write(data['summary'])
-
-        # st.markdown('### Keywords:', unsafe_allow_html=True)
-        # st.write(data['keywords'])
-
-        # st.session_state['message'].empty()
         st.session_state['keywords'] = data['keywords']
         st.session_state['summary'] = data['summary']
     
@@ -360,7 +360,6 @@ with webscrape:
             st.write(st.session_state['keywords'])
     
         st.session_state['message'].empty()
-
 
 
 # CHANGE LOG
@@ -384,6 +383,23 @@ with changelog_tab:
             ##### 12/12/2023:
                 - Added Webscraping Feature
     """, unsafe_allow_html=True)
+    st.markdown("""
+            #### 01/23/2024
+                - Added Startup summaries
+                - Added Arpa-H summaries
+                - Add Matching tool between startup summaries and arpa-h sumamries
+    """, unsafe_allow_html=True)
+
+
+# Creat Columns of Grant Titles and Get Dot Products
+# for grant_number in grants.grant_number:
+#     stacked_embeddings = np.stack(startups_copy['embeddings'])
+#     grant_embeddings = grants.query('grant_number == @grant_number')['embeddings'].values[0]
+#     startups_copy[grant_number] = np.dot(stacked_embeddings, grant_embeddings)
+
+# cosine_similarity = startups_copy[['url', 'summary', 'ARPA-H-01',	'ARPA-H-02', 'ARPA-H-03', 'ARPA-H-04', 'ARPA-H-05','ARPA-H-06']]
+    
+
 
 
 # st.write('GRID OPTION BUILDER')
