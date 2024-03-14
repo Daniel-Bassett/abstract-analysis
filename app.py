@@ -85,7 +85,7 @@ def get_driver():
 
 def get_summary(page_text):
     completion = client.chat.completions.create(
-        model="gpt-3.5-turbo-1106",
+        model="gpt-3.5-turbo-0125",
         response_format={ "type": "json_object" },
         messages=[
             {"role": "system", 
@@ -143,10 +143,10 @@ nih_keywords_summary = nih_keywords_summary.rename(columns={'agency': 'Agency', 
 
 st.markdown('## InsightGrant', unsafe_allow_html=True)
 
-keyword_tab, startups, webscrape, changelog_tab = st.tabs(['Keyword', 'Startups', 'Webscrape' ,'Changelog'])
+awardee_tab, startups, webscrape, changelog_tab = st.tabs(['Awardees', 'Startups', 'Webscrape' ,'Changelog'])
 
-# KEYWORD SEARCH
-with keyword_tab:
+# Awardee Data
+with awardee_tab:
 
     # FILTER WIDGETS
     keywords_column = st.columns((6, 6))
@@ -364,6 +364,10 @@ with changelog_tab:
                 - Added Startup summaries
                 - Added Arpa-H summaries
                 - Add Matching tool between startup summaries and arpa-h sumamries
+    """, unsafe_allow_html=True)
+    st.markdown("""
+            #### 03/14/2024
+                - Changed webscrape model to gpt-3.5-turbo-0125
     """, unsafe_allow_html=True)
 
 
